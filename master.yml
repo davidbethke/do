@@ -1,0 +1,89 @@
+---
+
+- hosts: masters
+  become: yes
+  tasks:
+    - name: initialize the cluster
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16 >> cluster_initialized.txt
+      args:
+        chdir: $HOME
+        creates: cluster_initialized.txt
+
+    - name: create .kube directory
+      become: yes
+      become_user: centos
+      file:
+        path: $HOME/.kube
+        state: directory
+        mode: 0755
+
+    - name: copy admin.conf to user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/centos/.kube/config
+        remote_src: yes
+        owner: centos
+
+    - name: install Pod network
+      become: yes
+      become_user: centos
+      shell: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml >> pod_network_setup.txt
+      args:
+        chdir: $HOME
+        creates: pod_network_setup.txt
+
+    - name: clone DO cloud controller
+      become: yes
+      become_user: centos
+      git:
+        repo: https://github.com/digitalocean/digitalocean-cloud-controller-manager.git
+        dest: /home/centos/digitalocean-cloud-controller-manager
+        clone: yes
+        update: no
+      when: fancy is defined
+    
+    - name: copy DO token to kubernetes
+      become: yes
+      become_user: centos
+      copy:
+        src: secret.yml
+        dest: /home/centos/digitalocean-cloud-controller-manager/releases/secret.yml
+        remote_src: no
+        owner: centos
+      when: fancy is defined
+
+    - name: deploy DO token
+      become: yes
+      become_user: centos
+      shell: kubectl apply -f /home/centos/digitalocean-cloud-controller-manager/releases/secret.yml
+      args:
+        chdir: $HOME
+      tags: token
+      when: fancy is defined
+
+    - name: deploy DO cloud controller
+      become: yes
+      become_user: centos
+      shell: kubectl apply -f digitalocean-cloud-controller-manager/releases/v0.1.7.yml >> cloud_controller_setup.txt
+      args:
+        chdir: $HOME
+        creates: cloud_controller_setup.txt
+      when: fancy is defined
+
+    - name: deploy DO Volume controller
+      become: yes
+      become_user: centos
+      shell: kubectl apply -f https://raw.githubusercontent.com/digitalocean/csi-digitalocean/master/deploy/kubernetes/releases/csi-digitalocean-v0.2.0.yaml >> do_vol_controller.txt
+      args:
+        chdir: $HOME
+        creates: do_vol_controller.txt
+      tags: volumeController
+      when: fancy is defined
+
+    #- name: deploy appscode Voyager HAproxy
+    #  become: yes
+    #  become_user: centos
+    #  shell: curl -fsSL https://raw.githubusercontent.com/appscode/voyager/7.4.0/hack/deploy/voyager.sh  | bash -s -- --provider=digitalocean
+    #  args:
+    #    chdir: $HOME
+    #  tags: ingressController

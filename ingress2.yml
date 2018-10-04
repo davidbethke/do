@@ -1,0 +1,16 @@
+---
+apiVersion: voyager.appscode.com/v1beta1
+kind: Ingress
+metadata:
+  name: test2-ingress
+  namespace: default
+  annotations:
+    ingress.appscode.com/type: LoadBalancer
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          serviceName: web
+          servicePort: 80
+        path: /

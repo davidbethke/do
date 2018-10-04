@@ -1,0 +1,5 @@
+[workers]
+ worker2 ansible_host=178.128.187.60 ansible_user=root ansible_ssh_private_key_file=/home/dave/.ssh/id_rsa_do
+ worker1 ansible_host=142.93.20.144 ansible_user=root ansible_ssh_private_key_file=/home/dave/.ssh/id_rsa_do
+[masters]
+ master ansible_host=178.128.72.215 ansible_user=root ansible_ssh_private_key_file=/home/dave/.ssh/id_rsa_do

@@ -1,0 +1,36 @@
+---
+
+- hosts: masters
+  become: yes
+  gather_facts: false
+  tasks:
+    - name: get join command
+      shell: kubeadm token create --print-join-command
+      register: join_command_raw
+
+    - name: set join command
+      set_fact:
+        join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+
+- hosts: workers
+  become: yes
+  tasks:
+    - name: join cluster
+      shell: "{{ hostvars['master'].join_command }} >> node_joined.txt"
+      args:
+        chdir: $HOME
+        creates: node_joined.txt
+
+- hosts: masters
+  become: yes
+  gather_facts: false
+  tasks:
+    - name: deploy appscode Voyager HAproxy
+      become: yes
+      become_user: centos
+      shell: curl -fsSL https://raw.githubusercontent.com/appscode/voyager/7.4.0/hack/deploy/voyager.sh  | bash -s -- --provider=digitalocean
+      args:
+        chdir: $HOME
+      tags: ingressController
+      when: fancy is defined
