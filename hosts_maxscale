@@ -1,0 +1,5 @@
+[sql]
+sql-east ansible_host=192.168.69.134 ansible_user=root ansible_ssh_private_key_file=/home/dave/.ssh/id_rsa
+sql-west ansible_host=192.168.69.130 ansible_user=root ansible_ssh_private_key_file=/home/dave/.ssh/id_rsa
+[max]
+ maxscale ansible_host=192.168.69.129 ansible_user=root ansible_ssh_private_key_file=/home/dave/.ssh/id_rsa
